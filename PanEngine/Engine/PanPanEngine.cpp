@@ -1,28 +1,63 @@
-//#include "EngineMinimal.h"
-#include <Windows.h>
+#include "EngineMinimal.h"
 #include "EngineFactory.h"
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR c, int nCmdShow)
 {
+	int ReturnValue = 0;
 	if (FEngine* Engine = FEngineFactory::CreateEngine())
 	{
-		Engine->PreExit();
+		FWinMainCommandParameters CommandParameters(hInstance, hPrevInstance, c, nCmdShow);
+		ReturnValue=Engine->PreInit(
+#if defined(_WIN32)
+			CommandParameters
+#endif	
+		);
+		if (ReturnValue != 0)
+		{
+			return ReturnValue;
+		}
 
-		Engine->Init();
+		ReturnValue = Engine->Init();
+		if (ReturnValue !=  0)
+		{
+			return ReturnValue;
+		}
 
-		Engine->PostInit();
+		ReturnValue = Engine->PostInit();
+		if (ReturnValue != 0)
+		{
+			return ReturnValue;
+		}
 
 		while (true)
 		{
 			Engine->Tick();
 		}
 
-		Engine->PreExit();
-		Engine->Exit();
-		Engine->PostExit();
+		ReturnValue = Engine->PreExit();
+		if (ReturnValue != 0)
+		{
+			return ReturnValue;
+		}
 
-		return 0;
+		ReturnValue = Engine->Exit();
+		if (ReturnValue != 0)
+		{
+			return ReturnValue;
+		}
+
+		ReturnValue = Engine->PostExit();
+		if (ReturnValue != 0)
+		{
+			return ReturnValue;
+		}
+
+		ReturnValue = 0;
 	}
-	return 1;
+	else
+	{
+		ReturnValue = 1;
+	}
+	return ReturnValue;
 	
 }
