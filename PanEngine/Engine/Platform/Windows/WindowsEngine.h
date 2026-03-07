@@ -14,5 +14,8 @@ public:
 	virtual int Exit();
 	virtual int PostExit();
 
+private:
+	bool InitWindows(const FWinMainCommandParameters &InParams);
+
 };
 #endif

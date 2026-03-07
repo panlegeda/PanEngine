@@ -2,64 +2,76 @@
 #include "EngineFactory.h"
 #include "Debug/Log/SimpleLog.h"
 
+int Init(FEngine* InEngine, HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR c, int nCmdShow)
+{
+	FWinMainCommandParameters CommandParameters(hInstance, hPrevInstance, c, nCmdShow);
+	int ReturnValue = InEngine->PreInit(
+#if defined(_WIN32)
+		CommandParameters
+#endif	
+	);
+	if (ReturnValue != 0)
+	{
+		Engine_Log_Error("PreInit Failed with error code [%i]", ReturnValue);
+		return ReturnValue;
+	}
+
+	ReturnValue = InEngine->Init();
+	if (ReturnValue != 0)
+	{
+		Engine_Log_Error("Init Failed with error code [%i]", ReturnValue);
+		return ReturnValue;
+	}
+
+	ReturnValue = InEngine->PostInit();
+	if (ReturnValue != 0)
+	{
+		Engine_Log_Error("PostInit Failed with error code [%i]", ReturnValue);
+		return ReturnValue;
+	}
+}
+
+void Tick(FEngine* InEngine)
+{
+	InEngine->Tick();
+}
+
+int Exit(FEngine* InEngine)
+{
+	int ReturnValue = InEngine->PreExit();
+	if (ReturnValue != 0)
+	{
+		Engine_Log_Error("PreExit Failed with error code [%i]", ReturnValue);
+		return ReturnValue;
+	}
+	ReturnValue = InEngine->Exit();
+	if (ReturnValue != 0)
+	{
+		Engine_Log_Error("Exit Failed with error code [%i]", ReturnValue);
+		return ReturnValue;
+	}
+	ReturnValue = InEngine->PostExit();
+	if (ReturnValue != 0)
+	{
+		Engine_Log_Error("PostExit Failed with error code [%i]", ReturnValue);
+		return ReturnValue;
+	}
+}
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR c, int nCmdShow)
 {
 	int ReturnValue = 0;
 	if (FEngine* Engine = FEngineFactory::CreateEngine())
 	{
-		FWinMainCommandParameters CommandParameters(hInstance, hPrevInstance, c, nCmdShow);
-		ReturnValue=Engine->PreInit(
-#if defined(_WIN32)
-			CommandParameters
-#endif	
-		);
-		if (ReturnValue != 0)
-		{
-			Engine_Log_Error("PreInit Failed with error code [%i]", ReturnValue);
-			return ReturnValue;
-		}
-
-		ReturnValue = Engine->Init();
-		if (ReturnValue !=  0)
-		{
-			Engine_Log_Error("Init Failed with error code [%i]", ReturnValue);
-			return ReturnValue;
-		}
-
-		ReturnValue = Engine->PostInit();
-		if (ReturnValue != 0)
-		{
-			Engine_Log_Error("PostInit Failed with error code [%i]", ReturnValue);
-			return ReturnValue;
-		}
-
+		//³õÊ¼»¯
+		ReturnValue = Init(Engine, hInstance, hPrevInstance, c, nCmdShow);
+		//äÖÈ¾
 		while (true)
 		{
-			Engine->Tick();
+			Tick(Engine);
 		}
-
-		ReturnValue = Engine->PreExit();
-		if (ReturnValue != 0)
-		{
-			Engine_Log_Error("PreExit Failed with error code [%i]", ReturnValue);
-			return ReturnValue;
-		}
-
-		ReturnValue = Engine->Exit();
-		if (ReturnValue != 0)
-		{
-			Engine_Log_Error("Exit Failed with error code [%i]", ReturnValue);
-			return ReturnValue;
-		}
-
-		ReturnValue = Engine->PostExit();
-		if (ReturnValue != 0)
-		{
-			Engine_Log_Error("PostExit Failed with error code [%i]", ReturnValue);
-			return ReturnValue;
-		}
-
-		ReturnValue = 0;
+		//ÍË³ö
+		ReturnValue = Exit(Engine);
 	}
 	else
 	{
