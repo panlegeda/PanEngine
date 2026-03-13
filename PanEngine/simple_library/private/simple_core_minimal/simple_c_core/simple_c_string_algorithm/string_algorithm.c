@@ -439,7 +439,7 @@ void wreplace_string_inline(
 	int sub_char_a_size = wcslen(sub_char_a);
 	int sub_char_b_size = wcslen(sub_char_b);
 
-	int index = wfind_string(str, sub_char_a, 0);
+	int index = wfind_string(str, sub_char_a);
 	if (index != -1)
 	{
 		wchar_t buff1[8196] = { 0 };

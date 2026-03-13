@@ -3,21 +3,30 @@
 #include "WindowsMessageProcessing.h"
 int FWindowsEngine::PreInit(FWinMainCommandParameters InParams)
 {
+	//日志系统初始化
+	const char LogPath[] = "../log";
+	init_log_system(LogPath);
+	Engine_Log("Log Init");
+
+	//处理命令
+
 	if(InitWindows(InParams))
 	{
 		return 0;
 	}
-
+	Engine_Log("PreInit");
 	return 0;
 }
 
 int FWindowsEngine::Init()
 {
+	Engine_Log("Engine initialization complete");
 	return 0;
 }
 
 int FWindowsEngine::PostInit()
 {
+	Engine_Log("Engine post initialization complete");
 	return 0;
 }
 
@@ -27,16 +36,19 @@ void FWindowsEngine::Tick()
 
 int FWindowsEngine::PreExit()
 {
+	Engine_Log("Engine pre exit complete");
 	return 0;
 }
 
 int FWindowsEngine::Exit()
 {
+	Engine_Log("Engine exit complete");
 	return 0;
 }
 
 int FWindowsEngine::PostExit()
 {
+	Engine_Log("Engine post exit complete");
 	return 0;
 }
 bool FWindowsEngine::InitWindows(const FWinMainCommandParameters& InParams)
