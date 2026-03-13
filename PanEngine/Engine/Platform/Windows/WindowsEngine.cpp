@@ -12,9 +12,10 @@ int FWindowsEngine::PreInit(FWinMainCommandParameters InParams)
 
 	if(InitWindows(InParams))
 	{
+		Engine_Log("Engine PreInit complete");
 		return 0;
 	}
-	Engine_Log("PreInit");
+	
 	return 0;
 }
 
@@ -71,6 +72,7 @@ bool FWindowsEngine::InitWindows(const FWinMainCommandParameters& InParams)
 	ATOM RegisterAtom = RegisterClassEx(&WindowClass);//注册窗口
 	if (!RegisterAtom)
 	{
+		Engine_Log_Error("Register windows class failed");
 		MessageBox(nullptr, L"Failed to register window class!", L"Error", MB_OK);
 	}
 
@@ -97,11 +99,13 @@ bool FWindowsEngine::InitWindows(const FWinMainCommandParameters& InParams)
 		nullptr);
 	if(!hWnd)
 	{
+		Engine_Log_Error("Init windows failed");
 		MessageBox(nullptr, L"Failed to create window!", L"Error", MB_OK);
 		return false;
 	}
 	ShowWindow(hWnd, SW_SHOW);//显示窗口
 	UpdateWindow(hWnd);//更新窗口
+	Engine_Log("Init windows complete");
 
 	return true;
 }

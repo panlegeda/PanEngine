@@ -29,6 +29,7 @@ int Init(FEngine* InEngine, HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR 
 		Engine_Log_Error("PostInit Failed with error code [%i]", ReturnValue);
 		return ReturnValue;
 	}
+	return ReturnValue;
 }
 
 void Tick(FEngine* InEngine)
