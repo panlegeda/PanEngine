@@ -20,7 +20,10 @@ private:
 protected:
 	ComPtr<IDXGIFactory4> DXGIFactory;
 	ComPtr<ID3D12Device> D3DDevice;
-	ComPtr<ID3D12Fence> Fence;
+	ComPtr<ID3D12Fence> Fence;//同步一个cpu和多个gpu线程
 
+	ComPtr<ID3D12CommandQueue> CommandQueue;//队列
+	ComPtr<ID3D12CommandAllocator> CommandAllocator;//存储
+	ComPtr<ID3D12GraphicsCommandList> CommandList;//命令列表
 };
 #endif

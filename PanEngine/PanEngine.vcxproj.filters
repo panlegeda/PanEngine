@@ -168,6 +168,9 @@
     <ClCompile Include="Engine\Platform\Windows\WindowsMessageProcessing.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Debug\EngineDebug.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Core\Engine.h">
@@ -366,6 +369,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Platform\Windows\WindowsMessageProcessing.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Debug\EngineDebug.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
