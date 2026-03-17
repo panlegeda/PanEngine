@@ -16,6 +16,11 @@ public:
 
 private:
 	bool InitWindows(const FWinMainCommandParameters &InParams);
+	bool InitDirect3D();
+protected:
+	ComPtr<IDXGIFactory4> DXGIFactory;
+	ComPtr<ID3D12Device> D3DDevice;
+	ComPtr<ID3D12Fence> Fence;
 
 };
 #endif

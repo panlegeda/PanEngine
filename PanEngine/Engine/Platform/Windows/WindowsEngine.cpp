@@ -13,8 +13,13 @@ int FWindowsEngine::PreInit(FWinMainCommandParameters InParams)
 	if(InitWindows(InParams))
 	{
 		Engine_Log("Engine PreInit complete");
-		return 0;
 	}
+
+	if(InitDirect3D())
+	{
+		Engine_Log("Init Direct3D complete");
+	}
+
 	
 	return 0;
 }
@@ -108,5 +113,9 @@ bool FWindowsEngine::InitWindows(const FWinMainCommandParameters& InParams)
 	Engine_Log("Init windows complete");
 
 	return true;
+}
+bool FWindowsEngine::InitDirect3D()
+{
+	return false;
 }
 #endif
