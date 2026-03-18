@@ -2,6 +2,7 @@
 #include "../../Debug/EngineDebug.h"
 #if defined(_WIN32)
 #include "WindowsMessageProcessing.h"
+#include "../../Config/EngineRenderConfig.h"
 int FWindowsEngine::PreInit(FWinMainCommandParameters InParams)
 {
 	//日志系统初始化
@@ -55,6 +56,7 @@ int FWindowsEngine::Exit()
 
 int FWindowsEngine::PostExit()
 {
+	FEngineRenderConfig::Destroy();
 	Engine_Log("Engine post exit complete");
 	return 0;
 }
@@ -82,7 +84,7 @@ bool FWindowsEngine::InitWindows(const FWinMainCommandParameters& InParams)
 		MessageBox(nullptr, L"Failed to register window class!", L"Error", MB_OK);
 	}
 
-	RECT Rext = { 0, 0, 1280, 720 };
+	RECT Rext = { 0, 0, FEngineRenderConfig::GetRenderConfig()->ScreenWidth, FEngineRenderConfig::GetRenderConfig()->ScreenHeight };
 
 	//@rect 视口
 	//WS_OVERLAPPEDWINDOW 视口风格
@@ -92,7 +94,7 @@ bool FWindowsEngine::InitWindows(const FWinMainCommandParameters& InParams)
 	int WindowWidth = Rext.right - Rext.left;
 	int WindowHeight = Rext.bottom - Rext.top;
 
-	HWND hWnd = CreateWindowEx(
+	MainWindowsHandle = CreateWindowEx(
 		NULL,//窗口名称
 		L"PanPanEngine",
 		L"PanPanEngine",
@@ -103,14 +105,14 @@ bool FWindowsEngine::InitWindows(const FWinMainCommandParameters& InParams)
 		nullptr,//菜单句柄
 		InParams.HInstance,//窗口实例
 		nullptr);
-	if(!hWnd)
+	if(!MainWindowsHandle)
 	{
 		Engine_Log_Error("Init windows failed");
 		MessageBox(nullptr, L"Failed to create window!", L"Error", MB_OK);
 		return false;
 	}
-	ShowWindow(hWnd, SW_SHOW);//显示窗口
-	UpdateWindow(hWnd);//更新窗口
+	ShowWindow(MainWindowsHandle, SW_SHOW);//显示窗口
+	UpdateWindow(MainWindowsHandle);//更新窗口
 	Engine_Log("Init windows complete");
 
 	return true;
@@ -176,6 +178,28 @@ bool FWindowsEngine::InitDirect3D()
 	));
 
 	CommandList->Close();//关闭命令列表
+
+	SwapChain.Reset();
+	DXGI_SWAP_CHAIN_DESC SwapChainDesc = {};
+	SwapChainDesc.BufferDesc.Width = FEngineRenderConfig::GetRenderConfig()->ScreenWidth;//交换链缓冲区宽度
+	SwapChainDesc.BufferDesc.Height = FEngineRenderConfig::GetRenderConfig()->ScreenHeight;
+	SwapChainDesc.BufferDesc.RefreshRate.Numerator = FEngineRenderConfig::GetRenderConfig()->RefreshRate;
+	SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+	SwapChainDesc.BufferCount = FEngineRenderConfig::GetRenderConfig()->SwapChainCount;//交换链缓冲区数量
+	SwapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER::DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;//交换链扫描线顺序
+	SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;//交换链缓冲区使用方式
+	SwapChainDesc.OutputWindow = MainWindowsHandle;//交换链关联的窗口
+	SwapChainDesc.Windowed = TRUE;//是否窗口化
+	//SwapChainDesc.SampleDesc.Count = 1;//交换链采样数量
+	//SwapChainDesc.SampleDesc.Quality = 0;//交换链采样质量
+	SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_FLIP_DISCARD;//交换链交换效果
+	SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;//交换链标志
+	ANALYSIS_HRESULT(DXGIFactory->CreateSwapChain(
+		CommandQueue.Get(),//交换链关联的命令队列
+		&SwapChainDesc,
+		SwapChain.GetAddressOf()
+	));
+
 	return false;
 }
 #endif

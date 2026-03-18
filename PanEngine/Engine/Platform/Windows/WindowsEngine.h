@@ -25,5 +25,10 @@ protected:
 	ComPtr<ID3D12CommandQueue> CommandQueue;//队列
 	ComPtr<ID3D12CommandAllocator> CommandAllocator;//存储
 	ComPtr<ID3D12GraphicsCommandList> CommandList;//命令列表
+
+	ComPtr<IDXGISwapChain> SwapChain;//交换链
+
+protected:
+	HWND MainWindowsHandle;//窗口句柄
 };
 #endif
