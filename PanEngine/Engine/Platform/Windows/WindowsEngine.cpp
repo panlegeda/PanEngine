@@ -179,7 +179,7 @@ bool FWindowsEngine::InitDirect3D()
 		D3D12_COMMAND_LIST_TYPE_DIRECT,//直接类型
 		CommandAllocator.Get(),//将command allocator与command list关联
 		nullptr,//管线状态对象
-		IID_PPV_ARGS(CommandList.GetAddressOf())
+		IID_PPV_ARGS(&CommandList)
 	));
 
 	CommandList->Close();//关闭命令列表
