@@ -5,6 +5,7 @@
 class FWindowsEngine : public FEngine
 {
 public:
+	FWindowsEngine();
 	virtual int PreInit(FWinMainCommandParameters InParams);
 	virtual int Init();
 	virtual int PostInit();
@@ -30,5 +31,7 @@ protected:
 
 protected:
 	HWND MainWindowsHandle;//´°¿Ú¾ä±ú
+	UINT M4XNumQualityLevels;
+	bool b4XMSAAEnabled;
 };
 #endif

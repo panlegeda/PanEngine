@@ -127,6 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Engine\Config\EngineRenderConfig.cpp" />
     <ClCompile Include="Engine\Core\Engine.cpp" />
     <ClCompile Include="Engine\Core\WinMainCommandParameters.cpp" />
     <ClCompile Include="Engine\Debug\EngineDebug.cpp" />
@@ -181,6 +182,7 @@
     <ClCompile Include="simple_library\third_party_library\tinyxml\tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Engine\Config\EngineRenderConfig.h" />
     <ClInclude Include="Engine\Core\Engine.h" />
     <ClInclude Include="Engine\Core\WinMainCommandParameters.h" />
     <ClInclude Include="Engine\Debug\EngineDebug.h" />

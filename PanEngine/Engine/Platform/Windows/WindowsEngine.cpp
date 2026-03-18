@@ -3,6 +3,11 @@
 #if defined(_WIN32)
 #include "WindowsMessageProcessing.h"
 #include "../../Config/EngineRenderConfig.h"
+FWindowsEngine::FWindowsEngine()
+	:M4XNumQualityLevels(0),
+	b4XMSAAEnabled(FALSE)
+{
+}
 int FWindowsEngine::PreInit(FWinMainCommandParameters InParams)
 {
 	//日志系统初始化
@@ -179,6 +184,19 @@ bool FWindowsEngine::InitDirect3D()
 
 	CommandList->Close();//关闭命令列表
 
+	//多重采样
+	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS MultiSampleQualityLevels = {};
+	MultiSampleQualityLevels.SampleCount = 4;//采样数量
+	MultiSampleQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;//采样质量标志
+	MultiSampleQualityLevels.NumQualityLevels = 0;//采样质量数量
+	ANALYSIS_HRESULT(D3DDevice->CheckFeatureSupport(
+		D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
+		&MultiSampleQualityLevels,
+		sizeof(MultiSampleQualityLevels)
+	));
+	M4XNumQualityLevels = MultiSampleQualityLevels.NumQualityLevels;//采样质量数量
+
+	//交换链
 	SwapChain.Reset();
 	DXGI_SWAP_CHAIN_DESC SwapChainDesc = {};
 	SwapChainDesc.BufferDesc.Width = FEngineRenderConfig::GetRenderConfig()->ScreenWidth;//交换链缓冲区宽度
@@ -190,8 +208,9 @@ bool FWindowsEngine::InitDirect3D()
 	SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;//交换链缓冲区使用方式
 	SwapChainDesc.OutputWindow = MainWindowsHandle;//交换链关联的窗口
 	SwapChainDesc.Windowed = TRUE;//是否窗口化
-	//SwapChainDesc.SampleDesc.Count = 1;//交换链采样数量
-	//SwapChainDesc.SampleDesc.Quality = 0;//交换链采样质量
+	//多重采样设置
+	SwapChainDesc.SampleDesc.Count = b4XMSAAEnabled? 4:1;//交换链采样数量
+	SwapChainDesc.SampleDesc.Quality = b4XMSAAEnabled ? M4XNumQualityLevels-1 : 0;//交换链采样质量
 	SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_FLIP_DISCARD;//交换链交换效果
 	SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;//交换链标志
 	ANALYSIS_HRESULT(DXGIFactory->CreateSwapChain(
