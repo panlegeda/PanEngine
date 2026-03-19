@@ -33,5 +33,6 @@ protected:
 	HWND MainWindowsHandle;//´°¿Ú¾ä±ú
 	UINT M4XNumQualityLevels;
 	bool b4XMSAAEnabled;
+	DXGI_FORMAT BufferFormat;
 };
 #endif

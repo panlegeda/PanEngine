@@ -3,9 +3,19 @@
 #if defined(_WIN32)
 #include "WindowsMessageProcessing.h"
 #include "../../Config/EngineRenderConfig.h"
+
+//class FVector
+//{
+//	unsigned char r;
+//	unsigned char g;
+//	unsigned char b;
+//	unsigned char a;
+//};
+
 FWindowsEngine::FWindowsEngine()
 	:M4XNumQualityLevels(0),
-	b4XMSAAEnabled(FALSE)
+	b4XMSAAEnabled(FALSE),
+	BufferFormat(DXGI_FORMAT_R8G8B8A8_UNORM)
 {
 }
 int FWindowsEngine::PreInit(FWinMainCommandParameters InParams)
@@ -213,6 +223,9 @@ bool FWindowsEngine::InitDirect3D()
 	SwapChainDesc.SampleDesc.Quality = b4XMSAAEnabled ? M4XNumQualityLevels-1 : 0;//交换链采样质量
 	SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_FLIP_DISCARD;//交换链交换效果
 	SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;//交换链标志
+	SwapChainDesc.BufferDesc.Format = BufferFormat;//格式纹理
+	
+	
 	ANALYSIS_HRESULT(DXGIFactory->CreateSwapChain(
 		CommandQueue.Get(),//交换链关联的命令队列
 		&SwapChainDesc,
