@@ -4,7 +4,9 @@
 
 int Init(FEngine* InEngine, HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR c, int nCmdShow)
 {
+#if defined(_WIN32)
 	FWinMainCommandParameters CommandParameters(hInstance, hPrevInstance, c, nCmdShow);
+#endif	
 	int ReturnValue = InEngine->PreInit(
 #if defined(_WIN32)
 		CommandParameters
@@ -16,7 +18,11 @@ int Init(FEngine* InEngine, HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR 
 		return ReturnValue;
 	}
 
-	ReturnValue = InEngine->Init();
+	ReturnValue = InEngine->Init(
+#if defined(_WIN32)
+		CommandParameters
+#endif
+	);
 	if (ReturnValue != 0)
 	{
 		Engine_Log_Error("Init Failed with error code [%i]", ReturnValue);

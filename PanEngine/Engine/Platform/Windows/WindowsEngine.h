@@ -7,7 +7,7 @@ class FWindowsEngine : public FEngine
 public:
 	FWindowsEngine();
 	virtual int PreInit(FWinMainCommandParameters InParams);
-	virtual int Init();
+	virtual int Init(FWinMainCommandParameters InParams);
 	virtual int PostInit();
 
 	virtual void Tick();
@@ -29,6 +29,9 @@ protected:
 
 	ComPtr<IDXGISwapChain> SwapChain;//交换链
 
+	
+	ComPtr<ID3D12DescriptorHeap> RTVHeap;//渲染目标视图描述符堆
+	ComPtr<ID3D12DescriptorHeap> DSVHeap;//深度模板视图描述符堆
 protected:
 	HWND MainWindowsHandle;//窗口句柄
 	UINT M4XNumQualityLevels;

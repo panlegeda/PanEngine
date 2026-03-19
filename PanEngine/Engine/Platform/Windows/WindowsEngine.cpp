@@ -27,22 +27,21 @@ int FWindowsEngine::PreInit(FWinMainCommandParameters InParams)
 
 	//处理命令
 
-	if(InitWindows(InParams))
-	{
-		Engine_Log("Engine PreInit complete");
-	}
-
-	if(InitDirect3D())
-	{
-		Engine_Log("Init Direct3D complete");
-	}
-
 	
 	return 0;
 }
 
-int FWindowsEngine::Init()
+int FWindowsEngine::Init(FWinMainCommandParameters InParams)
 {
+	if (InitWindows(InParams))
+	{
+		Engine_Log("Init Windows complete");
+	}
+
+	if (InitDirect3D())
+	{
+		Engine_Log("Init Direct3D complete");
+	}
 	Engine_Log("Engine initialization complete");
 	return 0;
 }
@@ -231,6 +230,27 @@ bool FWindowsEngine::InitDirect3D()
 		&SwapChainDesc,
 		SwapChain.GetAddressOf()
 	));
+
+	//资源描述符
+	//RTV
+	D3D12_DESCRIPTOR_HEAP_DESC RTVDescriptorHeapDesc = {};
+	RTVDescriptorHeapDesc.NumDescriptors = FEngineRenderConfig::GetRenderConfig()->SwapChainCount;//描述符数量
+	RTVDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;//渲染目标视图描述符堆
+	RTVDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;//描述符堆标志
+	RTVDescriptorHeapDesc.NodeMask = 0;//默认单个gpu线程
+	ANALYSIS_HRESULT(D3DDevice->CreateDescriptorHeap(
+		&RTVDescriptorHeapDesc, 
+		IID_PPV_ARGS(&RTVHeap)));
+
+	//DSV
+	D3D12_DESCRIPTOR_HEAP_DESC DSVDescriptorHeapDesc = {};
+	DSVDescriptorHeapDesc.NumDescriptors = 1;//描述符数量
+	DSVDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;//渲染目标视图描述符堆
+	DSVDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;//描述符堆标志
+	DSVDescriptorHeapDesc.NodeMask = 0;//默认单个gpu线程
+	ANALYSIS_HRESULT(D3DDevice->CreateDescriptorHeap(
+		&DSVDescriptorHeapDesc, 
+		IID_PPV_ARGS(&DSVHeap)));
 
 	return false;
 }
