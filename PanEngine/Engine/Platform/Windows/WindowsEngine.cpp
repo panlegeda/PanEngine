@@ -15,7 +15,8 @@
 FWindowsEngine::FWindowsEngine()
 	:M4XNumQualityLevels(0),
 	b4XMSAAEnabled(FALSE),
-	BufferFormat(DXGI_FORMAT_R8G8B8A8_UNORM)
+	BufferFormat(DXGI_FORMAT_R8G8B8A8_UNORM),
+	DepthStencilFormat(DXGI_FORMAT_D24_UNORM_S8_UINT)
 {
 	for(int i=0;i<FEngineRenderConfig::GetRenderConfig()->SwapChainCount;i++)
 	{
@@ -77,6 +78,41 @@ int FWindowsEngine::PostInit()
 		D3DDevice->CreateRenderTargetView(SwapChainBuffer[i].Get(), nullptr, HeapHandle);
 		HeapHandle.ptr += RTVDescriptorSize;
 	}
+	CD3DX12_HEAP_PROPERTIES HeapProperties(D3D12_HEAP_TYPE_DEFAULT);
+	CD3DX12_RESOURCE_DESC ResourceDesc = {};
+	ResourceDesc.Width = FEngineRenderConfig::GetRenderConfig()->ScreenWidth;
+	ResourceDesc.Height = FEngineRenderConfig::GetRenderConfig()->ScreenHeight;
+	ResourceDesc.Alignment = 0;
+	ResourceDesc.MipLevels = 1;
+	ResourceDesc.DepthOrArraySize = 1;
+	ResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	ResourceDesc.SampleDesc.Count = b4XMSAAEnabled? 4 : 1 ;
+	ResourceDesc.SampleDesc.Quality = b4XMSAAEnabled ? (M4XNumQualityLevels - 1) : 0;
+	ResourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	ResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	ResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+
+	CD3DX12_CLEAR_VALUE ClearValue = {};
+	ClearValue.DepthStencil.Depth = 1.0f;
+	ClearValue.DepthStencil.Stencil = 0;
+	ClearValue.Format = DepthStencilFormat;
+
+	D3DDevice->CreateCommittedResource(
+		&HeapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&ResourceDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		&ClearValue,
+		IID_PPV_ARGS(&DepthStencilBuffer)
+	);
+
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC DSVDesc = {};
+	DSVDesc.Format = DepthStencilFormat;
+	DSVDesc.Texture2D.MipSlice = 0;
+	DSVDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	DSVDesc.Flags = D3D12_DSV_FLAG_NONE;
+	D3DDevice->CreateDepthStencilView(DepthStencilBuffer.Get(), &DSVDesc, DSVHeap->GetCPUDescriptorHandleForHeapStart());
 
 	Engine_Log("Engine post initialization complete");
 	return 0;
@@ -237,29 +273,57 @@ bool FWindowsEngine::InitDirect3D()
 
 	//交换链
 	SwapChain.Reset();
-	DXGI_SWAP_CHAIN_DESC SwapChainDesc = {};
-	SwapChainDesc.BufferDesc.Width = FEngineRenderConfig::GetRenderConfig()->ScreenWidth;//交换链缓冲区宽度
-	SwapChainDesc.BufferDesc.Height = FEngineRenderConfig::GetRenderConfig()->ScreenHeight;
-	SwapChainDesc.BufferDesc.RefreshRate.Numerator = FEngineRenderConfig::GetRenderConfig()->RefreshRate;
-	SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-	SwapChainDesc.BufferCount = FEngineRenderConfig::GetRenderConfig()->SwapChainCount;//交换链缓冲区数量
-	SwapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER::DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;//交换链扫描线顺序
-	SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;//交换链缓冲区使用方式
-	SwapChainDesc.OutputWindow = MainWindowsHandle;//交换链关联的窗口
-	SwapChainDesc.Windowed = TRUE;//是否窗口化
-	//多重采样设置
-	SwapChainDesc.SampleDesc.Count = b4XMSAAEnabled? 4:1;//交换链采样数量
-	SwapChainDesc.SampleDesc.Quality = b4XMSAAEnabled ? M4XNumQualityLevels-1 : 0;//交换链采样质量
-	SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_FLIP_DISCARD;//交换链交换效果
-	SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;//交换链标志
-	SwapChainDesc.BufferDesc.Format = BufferFormat;//格式纹理
+	//DXGI_SWAP_CHAIN_DESC SwapChainDesc = {};
+	//SwapChainDesc.BufferDesc.Width = FEngineRenderConfig::GetRenderConfig()->ScreenWidth;//交换链缓冲区宽度
+	//SwapChainDesc.BufferDesc.Height = FEngineRenderConfig::GetRenderConfig()->ScreenHeight;
+	//SwapChainDesc.BufferDesc.RefreshRate.Numerator = FEngineRenderConfig::GetRenderConfig()->RefreshRate;
+	//SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+	//SwapChainDesc.BufferCount = FEngineRenderConfig::GetRenderConfig()->SwapChainCount;//交换链缓冲区数量
+	//SwapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER::DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;//交换链扫描线顺序
+	//SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;//交换链缓冲区使用方式
+	//SwapChainDesc.OutputWindow = MainWindowsHandle;//交换链关联的窗口
+	//SwapChainDesc.Windowed = TRUE;//是否窗口化
+	////多重采样设置
+	//SwapChainDesc.SampleDesc.Count = b4XMSAAEnabled? 4:1;//交换链采样数量
+	//SwapChainDesc.SampleDesc.Quality = b4XMSAAEnabled ? M4XNumQualityLevels-1 : 0;//交换链采样质量
+	//SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD;//交换链交换效果
+	//SwapChainDesc.Flags = 0;//交换链标志
+	//SwapChainDesc.BufferDesc.Format = BufferFormat;//格式纹理
+
+	DXGI_SWAP_CHAIN_DESC sd = {};
+	sd.BufferCount = 2;
+	sd.BufferDesc.Width = 1280;
+	sd.BufferDesc.Height = 720;
+	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	sd.BufferDesc.RefreshRate.Numerator = 60;
+	sd.BufferDesc.RefreshRate.Denominator = 1;
+	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	sd.OutputWindow = MainWindowsHandle;
+	sd.SampleDesc.Count = 1;
+	sd.SampleDesc.Quality = 0;
+	sd.Windowed = TRUE;
+	sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD; // 旧版兼容模式
+	sd.Flags = 0;
 	
-	
-	ANALYSIS_HRESULT(DXGIFactory->CreateSwapChain(
+	HRESULT hr = DXGIFactory->CreateSwapChain(
 		CommandQueue.Get(),//交换链关联的命令队列
-		&SwapChainDesc,
-		SwapChain.GetAddressOf()
-	));
+		&sd,
+		&SwapChain
+	);
+
+	if(hr==DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+	{
+		HRESULT DeviceRemovedReason = D3DDevice->GetDeviceRemovedReason();
+		wchar_t ErrorMessage[256];
+		swprintf_s(ErrorMessage, L"Device removed or reset! Reason: 0x%X", DeviceRemovedReason);
+		OutputDebugStringW(ErrorMessage);
+	}	
+
+	//ANALYSIS_HRESULT(DXGIFactory->CreateSwapChain(
+	//	CommandQueue.Get(),//交换链关联的命令队列
+	//	&SwapChainDesc,
+	//	&SwapChain
+	//));
 
 	//资源描述符
 	//RTV

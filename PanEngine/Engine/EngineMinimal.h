@@ -9,6 +9,7 @@
 #include <wrl.h>
 #include <dxgi1_4.h>
 #include <d3d12.h>
+#include "Rendering/DirectX12/d3dx12.h"
 #include <D3Dcompiler.h>
 #include <DirectXMath.h>
 #include <DirectXPackedVector.h>
