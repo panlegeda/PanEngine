@@ -17,6 +17,11 @@ FWindowsEngine::FWindowsEngine()
 	b4XMSAAEnabled(FALSE),
 	BufferFormat(DXGI_FORMAT_R8G8B8A8_UNORM)
 {
+	for(int i=0;i<FEngineRenderConfig::GetRenderConfig()->SwapChainCount;i++)
+	{
+		SwapChainBuffer.push_back(ComPtr<ID3D12Resource>());
+	}
+
 }
 int FWindowsEngine::PreInit(FWinMainCommandParameters InParams)
 {
@@ -48,6 +53,28 @@ int FWindowsEngine::Init(FWinMainCommandParameters InParams)
 
 int FWindowsEngine::PostInit()
 {
+	for(int i=0;i<FEngineRenderConfig::GetRenderConfig()->SwapChainCount;i++)
+	{
+		SwapChainBuffer[i].Reset();
+	}
+	DepthStencilBuffer.Reset();
+
+	SwapChain->ResizeBuffers(
+		FEngineRenderConfig::GetRenderConfig()->SwapChainCount,
+		FEngineRenderConfig::GetRenderConfig()->ScreenWidth,
+		FEngineRenderConfig::GetRenderConfig()->ScreenHeight,
+		BufferFormat,
+		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
+	);
+
+	D3D12_CPU_DESCRIPTOR_HANDLE HeapHandle = RTVHeap->GetCPUDescriptorHandleForHeapStart();
+	for (UINT i = 0; i < FEngineRenderConfig::GetRenderConfig()->SwapChainCount; i++)
+	{
+		SwapChain->GetBuffer(i, IID_PPV_ARGS(&SwapChainBuffer[i]));
+		D3DDevice->CreateRenderTargetView(SwapChainBuffer[i].Get(), nullptr, HeapHandle);
+		HeapHandle.ptr += D3DDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	}
+
 	Engine_Log("Engine post initialization complete");
 	return 0;
 }

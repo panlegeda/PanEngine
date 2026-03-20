@@ -32,6 +32,9 @@ protected:
 	
 	ComPtr<ID3D12DescriptorHeap> RTVHeap;//渲染目标视图描述符堆
 	ComPtr<ID3D12DescriptorHeap> DSVHeap;//深度模板视图描述符堆
+
+	vector<ComPtr<ID3D12Resource>> SwapChainBuffer;//渲染目标资源
+	ComPtr<ID3D12Resource> DepthStencilBuffer;//深度模板缓冲资源
 protected:
 	HWND MainWindowsHandle;//窗口句柄
 	UINT M4XNumQualityLevels;
