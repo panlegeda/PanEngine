@@ -67,12 +67,15 @@ int FWindowsEngine::PostInit()
 		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
 	);
 
+	//ÄÃµ½ÃèÊöµÄsize
+	RTVDescriptorSize = D3DDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	D3D12_CPU_DESCRIPTOR_HANDLE HeapHandle = RTVHeap->GetCPUDescriptorHandleForHeapStart();
+	HeapHandle.ptr = 0;
 	for (UINT i = 0; i < FEngineRenderConfig::GetRenderConfig()->SwapChainCount; i++)
 	{
 		SwapChain->GetBuffer(i, IID_PPV_ARGS(&SwapChainBuffer[i]));
 		D3DDevice->CreateRenderTargetView(SwapChainBuffer[i].Get(), nullptr, HeapHandle);
-		HeapHandle.ptr += D3DDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		HeapHandle.ptr += RTVDescriptorSize;
 	}
 
 	Engine_Log("Engine post initialization complete");

@@ -40,5 +40,6 @@ protected:
 	UINT M4XNumQualityLevels;
 	bool b4XMSAAEnabled;
 	DXGI_FORMAT BufferFormat;
+	UINT RTVDescriptorSize;
 };
 #endif
