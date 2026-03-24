@@ -26,12 +26,28 @@ FWindowsEngine::FWindowsEngine()
 }
 int FWindowsEngine::PreInit(FWinMainCommandParameters InParams)
 {
-	//日志系统初始化
-	const char LogPath[] = "../log";
-	init_log_system(LogPath);
+	//??????????
+	// Always place logs next to the executable: <exe_dir>\log
+	char ModulePath[MAX_PATH] = { 0 };
+	if (GetModuleFileNameA(nullptr, ModulePath, MAX_PATH) == 0)
+	{
+		init_log_system("log");
+	}
+	else
+	{
+		char* LastSlash = strrchr(ModulePath, '\\');
+		if (LastSlash != nullptr)
+		{
+			*LastSlash = '\0';
+		}
+		char LogPath[MAX_PATH] = { 0 };
+		strcpy_s(LogPath, ModulePath);
+		strcat_s(LogPath, "\\log");
+		init_log_system(LogPath);
+	}
 	Engine_Log("Log Init");
 
-	//处理命令
+	//????????
 
 	
 	return 0;
@@ -39,15 +55,17 @@ int FWindowsEngine::PreInit(FWinMainCommandParameters InParams)
 
 int FWindowsEngine::Init(FWinMainCommandParameters InParams)
 {
-	if (InitWindows(InParams))
+	if (!InitWindows(InParams))
 	{
-		Engine_Log("Init Windows complete");
+		return -1;
 	}
+	Engine_Log("Init Windows complete");
 
-	if (InitDirect3D())
+	if (!InitDirect3D())
 	{
-		Engine_Log("Init Direct3D complete");
+		return -2;
 	}
+	Engine_Log("Init Direct3D complete");
 	Engine_Log("Engine initialization complete");
 	return 0;
 }
@@ -71,7 +89,7 @@ int FWindowsEngine::PostInit()
 	}
 	
 
-	//拿到描述的size
+	//?????????size
 	RTVDescriptorSize = D3DDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	D3D12_CPU_DESCRIPTOR_HANDLE HeapHandle = RTVHeap->GetCPUDescriptorHandleForHeapStart();
 	HeapHandle.ptr = 0;
@@ -148,22 +166,22 @@ int FWindowsEngine::PostExit()
 }
 bool FWindowsEngine::InitWindows(const FWinMainCommandParameters& InParams)
 {
-	//注册窗口
+	//?????
 	WNDCLASSEX WindowClass;
-	WindowClass.cbSize = sizeof(WNDCLASSEX);//该对象实际占用多大内存
-	WindowClass.cbClsExtra = 0;//窗口类额外的内存
-	WindowClass.cbWndExtra = 0;//窗口额外的内存
-	WindowClass.hbrBackground = nullptr;//窗口背景画刷
-	WindowClass.hCursor = LoadCursor(nullptr, IDC_ARROW);//窗口光标
-	WindowClass.hIcon = nullptr;//窗口图标
-	WindowClass.hIconSm = NULL;//窗口小图标
-	WindowClass.hInstance = InParams.HInstance;//窗口实例
-	WindowClass.lpszClassName = L"PanPanEngine";//窗口名称
-	WindowClass.lpszMenuName = nullptr;//窗口菜单
-	WindowClass.style = CS_HREDRAW | CS_VREDRAW;//窗口样式
-	WindowClass.lpfnWndProc = EngineWindowProc;//窗口消息处理函数
+	WindowClass.cbSize = sizeof(WNDCLASSEX);//????????????????
+	WindowClass.cbClsExtra = 0;//?????????????
+	WindowClass.cbWndExtra = 0;//???????????
+	WindowClass.hbrBackground = nullptr;//??????????
+	WindowClass.hCursor = LoadCursor(nullptr, IDC_ARROW);//??????
+	WindowClass.hIcon = nullptr;//???????
+	WindowClass.hIconSm = NULL;//?????????
+	WindowClass.hInstance = InParams.HInstance;//???????
+	WindowClass.lpszClassName = L"PanPanEngine";//????????
+	WindowClass.lpszMenuName = nullptr;//??????
+	WindowClass.style = CS_HREDRAW | CS_VREDRAW;//???????
+	WindowClass.lpfnWndProc = EngineWindowProc;//???????????????
 
-	ATOM RegisterAtom = RegisterClassEx(&WindowClass);//注册窗口
+	ATOM RegisterAtom = RegisterClassEx(&WindowClass);//?????
 	if (!RegisterAtom)
 	{
 		Engine_Log_Error("Register windows class failed");
@@ -172,24 +190,24 @@ bool FWindowsEngine::InitWindows(const FWinMainCommandParameters& InParams)
 
 	RECT Rext = { 0, 0, FEngineRenderConfig::GetRenderConfig()->ScreenWidth, FEngineRenderConfig::GetRenderConfig()->ScreenHeight };
 
-	//@rect 视口
-	//WS_OVERLAPPEDWINDOW 视口风格
-	//FALSE 是否有菜单
-	AdjustWindowRect(&Rext, WS_OVERLAPPEDWINDOW, FALSE);//调整窗口大小
+	//@rect ???
+	//WS_OVERLAPPEDWINDOW ?????
+	//FALSE ????????
+	AdjustWindowRect(&Rext, WS_OVERLAPPEDWINDOW, FALSE);//???????????
 
 	int WindowWidth = Rext.right - Rext.left;
 	int WindowHeight = Rext.bottom - Rext.top;
 
 	MainWindowsHandle = CreateWindowEx(
-		NULL,//窗口名称
+		NULL,//????????
 		L"PanPanEngine",
 		L"PanPanEngine",
-		WS_OVERLAPPEDWINDOW,//窗口风格
-		100, 100,//窗口位置
+		WS_OVERLAPPEDWINDOW,//??????
+		100, 100,//????????
 		WindowWidth, WindowHeight,
-		nullptr, //副窗口句柄
-		nullptr,//菜单句柄
-		InParams.HInstance,//窗口实例
+		nullptr, //????????
+		nullptr,//??????
+		InParams.HInstance,//???????
 		nullptr);
 	if(!MainWindowsHandle)
 	{
@@ -197,8 +215,8 @@ bool FWindowsEngine::InitWindows(const FWinMainCommandParameters& InParams)
 		MessageBox(nullptr, L"Failed to create window!", L"Error", MB_OK);
 		return false;
 	}
-	ShowWindow(MainWindowsHandle, SW_SHOW);//显示窗口
-	UpdateWindow(MainWindowsHandle);//更新窗口
+	ShowWindow(MainWindowsHandle, SW_SHOW);//???????
+	UpdateWindow(MainWindowsHandle);//???????
 	Engine_Log("Init windows complete");
 
 	return true;
@@ -207,27 +225,27 @@ bool FWindowsEngine::InitDirect3D()
 {
 	//HRESULT
 	//S_OK				OXOOOOOO00
-	//E_UNEXPECTED		0x8000FFFF 意外的失败
-	//E_NOTIMPL			0x80004001 未实现
-	//E_OUTOFMEMORY		0x8007000E 内存不足
-	//E_INVALIDARG		0x80070057 参数无效
-	//E_FAIL			0x80004005 失败
-	//E_ACCESSDENIED		0x80070005 访问被拒绝
-	//E_HANDLE			0x80070006 句柄无效
-	//E_ABORT			0x80004004 操作被中止
-	//E_POINTER			0x80004003 指针无效
+	//E_UNEXPECTED		0x8000FFFF ????????
+	//E_NOTIMPL			0x80004001 ?????
+	//E_OUTOFMEMORY		0x8007000E ??????
+	//E_INVALIDARG		0x80070057 ????????
+	//E_FAIL			0x80004005 ???
+	//E_ACCESSDENIED		0x80070005 ????????
+	//E_HANDLE			0x80070006 ???????
+	//E_ABORT			0x80004004 ?????????
+	//E_POINTER			0x80004003 ???????
 	ANALYSIS_HRESULT(CreateDXGIFactory1(IID_PPV_ARGS(&DXGIFactory)));
 	
-	//D3D_FEATURE_LEVEL_11_0 代表Direct3D 11.0功能级别
-	//D3D_FEATURE_LEVEL_11_1 代表Direct3D 11.1功能级别
+	//D3D_FEATURE_LEVEL_11_0 ????Direct3D 11.0???????
+	//D3D_FEATURE_LEVEL_11_1 ????Direct3D 11.1???????
 	HRESULT D3DDeviceResult = D3D12CreateDevice(
-		nullptr, //默认适配器
-		D3D_FEATURE_LEVEL_11_0, //最低功能级别
+		nullptr, //?????????
+		D3D_FEATURE_LEVEL_11_0, //?????????
 		IID_PPV_ARGS(&D3DDevice)
 	);
 	if (FAILED(D3DDeviceResult))
 	{
-		//wrap 高级光栅化平台
+		//wrap ??????????
 		ComPtr<IDXGIAdapter> WarpAdapter;
 		ANALYSIS_HRESULT(DXGIFactory->EnumWarpAdapter(IID_PPV_ARGS(&WarpAdapter)));
 		ANALYSIS_HRESULT(D3D12CreateDevice(
@@ -241,10 +259,10 @@ bool FWindowsEngine::InitDirect3D()
 
 	ANALYSIS_HRESULT(D3DDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Fence)));
 
-	//初始化命令对象
+	//????????????
 	D3D12_COMMAND_QUEUE_DESC QueueDesc = {};
-	QueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;//直接命令列表
-	QueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;//命令队列标志
+	QueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;//???????????
+	QueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;//??????????
 	ANALYSIS_HRESULT(D3DDevice->CreateCommandQueue(
 		&QueueDesc,
 		IID_PPV_ARGS(&CommandQueue)
@@ -256,73 +274,75 @@ bool FWindowsEngine::InitDirect3D()
 		IID_PPV_ARGS(&CommandAllocator)
 	));
 	ANALYSIS_HRESULT(D3DDevice->CreateCommandList(
-		0,//默认单个gpu线程
-		D3D12_COMMAND_LIST_TYPE_DIRECT,//直接类型
-		CommandAllocator.Get(),//将command allocator与command list关联
-		nullptr,//管线状态对象
+		0,//??????gpu???
+		D3D12_COMMAND_LIST_TYPE_DIRECT,//???????
+		CommandAllocator.Get(),//??command allocator??command list????
+		nullptr,//??????????
 		IID_PPV_ARGS(&CommandList)
 	));
 
-	CommandList->Close();//关闭命令列表
+	CommandList->Close();//???????????
 
-	//多重采样
+	//???????
 	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS MultiSampleQualityLevels = {};
-	MultiSampleQualityLevels.SampleCount = 4;//采样数量
-	MultiSampleQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;//采样质量标志
-	MultiSampleQualityLevels.NumQualityLevels = 0;//采样质量数量
+	MultiSampleQualityLevels.SampleCount = 4;//????????
+	MultiSampleQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;//???????????
+	MultiSampleQualityLevels.Format = BufferFormat;//??????????????
+	MultiSampleQualityLevels.NumQualityLevels = 0;//????????????
 	ANALYSIS_HRESULT(D3DDevice->CheckFeatureSupport(
 		D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
 		&MultiSampleQualityLevels,
 		sizeof(MultiSampleQualityLevels)
 	));
-	M4XNumQualityLevels = MultiSampleQualityLevels.NumQualityLevels;//采样质量数量
+	M4XNumQualityLevels = MultiSampleQualityLevels.NumQualityLevels;//????????????
 
-	//交换链
+	//??????
 	SwapChain.Reset();
 	DXGI_SWAP_CHAIN_DESC SwapChainDesc = {};
-	SwapChainDesc.BufferDesc.Width = FEngineRenderConfig::GetRenderConfig()->ScreenWidth;//交换链缓冲区宽度
+	SwapChainDesc.BufferDesc.Width = FEngineRenderConfig::GetRenderConfig()->ScreenWidth;//????????????????
 	SwapChainDesc.BufferDesc.Height = FEngineRenderConfig::GetRenderConfig()->ScreenHeight;
 	SwapChainDesc.BufferDesc.RefreshRate.Numerator = FEngineRenderConfig::GetRenderConfig()->RefreshRate;
 	SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-	SwapChainDesc.BufferCount = FEngineRenderConfig::GetRenderConfig()->SwapChainCount;//交换链缓冲区数量
-	SwapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER::DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;//交换链扫描线顺序
-	SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;//交换链缓冲区使用方式
-	SwapChainDesc.OutputWindow = MainWindowsHandle;//交换链关联的窗口
-	SwapChainDesc.Windowed = TRUE;//是否窗口化
-	//多重采样设置
-	SwapChainDesc.SampleDesc.Count = b4XMSAAEnabled? 4:1;//交换链采样数量
-	SwapChainDesc.SampleDesc.Quality = b4XMSAAEnabled ? M4XNumQualityLevels-1 : 0;//交换链采样质量
-	SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD;//交换链交换效果
-	SwapChainDesc.Flags = 0;//交换链标志
-	SwapChainDesc.BufferDesc.Format = BufferFormat;//格式纹理
+	SwapChainDesc.BufferCount = FEngineRenderConfig::GetRenderConfig()->SwapChainCount;//????????????????
+	SwapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER::DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;//??????????????
+	SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;//??????????????????
+	SwapChainDesc.OutputWindow = MainWindowsHandle;//???????????????
+	SwapChainDesc.Windowed = TRUE;//?????
+	//???????????
+	SwapChainDesc.SampleDesc.Count = b4XMSAAEnabled? 4:1;//??????????????
+	SwapChainDesc.SampleDesc.Quality = b4XMSAAEnabled ? M4XNumQualityLevels-1 : 0;//??????????????
+	// D3D12 requires flip model. DISCARD can return DXGI_ERROR_INVALID_CALL.
+	SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;//??????????????
+	SwapChainDesc.Flags = 0;//?????????
+	SwapChainDesc.BufferDesc.Format = BufferFormat;//???????
 	
 	ANALYSIS_HRESULT(DXGIFactory->CreateSwapChain(
-		CommandQueue.Get(),//交换链关联的命令队列
+		CommandQueue.Get(),//???????????????????
 		&SwapChainDesc,
 		&SwapChain
 	));
 
-	//资源描述符
+	//?????????
 	//RTV
 	D3D12_DESCRIPTOR_HEAP_DESC RTVDescriptorHeapDesc = {};
-	RTVDescriptorHeapDesc.NumDescriptors = FEngineRenderConfig::GetRenderConfig()->SwapChainCount;//描述符数量
-	RTVDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;//渲染目标视图描述符堆
-	RTVDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;//描述符堆标志
-	RTVDescriptorHeapDesc.NodeMask = 0;//默认单个gpu线程
+	RTVDescriptorHeapDesc.NumDescriptors = FEngineRenderConfig::GetRenderConfig()->SwapChainCount;//??????????
+	RTVDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;//?????????????????
+	RTVDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;//??????????
+	RTVDescriptorHeapDesc.NodeMask = 0;//??????gpu???
 	ANALYSIS_HRESULT(D3DDevice->CreateDescriptorHeap(
 		&RTVDescriptorHeapDesc, 
 		IID_PPV_ARGS(&RTVHeap)));
 
 	//DSV
 	D3D12_DESCRIPTOR_HEAP_DESC DSVDescriptorHeapDesc = {};
-	DSVDescriptorHeapDesc.NumDescriptors = 1;//描述符数量
-	DSVDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;//渲染目标视图描述符堆
-	DSVDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;//描述符堆标志
-	DSVDescriptorHeapDesc.NodeMask = 0;//默认单个gpu线程
+	DSVDescriptorHeapDesc.NumDescriptors = 1;//??????????
+	DSVDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;//?????????????????
+	DSVDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;//??????????
+	DSVDescriptorHeapDesc.NodeMask = 0;//??????gpu???
 	ANALYSIS_HRESULT(D3DDevice->CreateDescriptorHeap(
 		&DSVDescriptorHeapDesc, 
 		IID_PPV_ARGS(&DSVHeap)));
 
-	return false;
+	return true;
 }
 #endif
