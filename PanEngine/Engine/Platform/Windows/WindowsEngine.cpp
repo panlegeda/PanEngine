@@ -59,14 +59,17 @@ int FWindowsEngine::PostInit()
 		SwapChainBuffer[i].Reset();
 	}
 	DepthStencilBuffer.Reset();
-
-	SwapChain->ResizeBuffers(
-		FEngineRenderConfig::GetRenderConfig()->SwapChainCount,
-		FEngineRenderConfig::GetRenderConfig()->ScreenWidth,
-		FEngineRenderConfig::GetRenderConfig()->ScreenHeight,
-		BufferFormat,
-		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
-	);
+	if (SwapChain)
+	{
+		SwapChain->ResizeBuffers(
+			FEngineRenderConfig::GetRenderConfig()->SwapChainCount,
+			FEngineRenderConfig::GetRenderConfig()->ScreenWidth,
+			FEngineRenderConfig::GetRenderConfig()->ScreenHeight,
+			BufferFormat,
+			DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH
+		);
+	}
+	
 
 	//拿到描述的size
 	RTVDescriptorSize = D3DDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -74,7 +77,10 @@ int FWindowsEngine::PostInit()
 	HeapHandle.ptr = 0;
 	for (UINT i = 0; i < FEngineRenderConfig::GetRenderConfig()->SwapChainCount; i++)
 	{
-		SwapChain->GetBuffer(i, IID_PPV_ARGS(&SwapChainBuffer[i]));
+		if (SwapChain)
+		{
+			SwapChain->GetBuffer(i, IID_PPV_ARGS(&SwapChainBuffer[i]));
+		}
 		D3DDevice->CreateRenderTargetView(SwapChainBuffer[i].Get(), nullptr, HeapHandle);
 		HeapHandle.ptr += RTVDescriptorSize;
 	}
@@ -273,57 +279,28 @@ bool FWindowsEngine::InitDirect3D()
 
 	//交换链
 	SwapChain.Reset();
-	//DXGI_SWAP_CHAIN_DESC SwapChainDesc = {};
-	//SwapChainDesc.BufferDesc.Width = FEngineRenderConfig::GetRenderConfig()->ScreenWidth;//交换链缓冲区宽度
-	//SwapChainDesc.BufferDesc.Height = FEngineRenderConfig::GetRenderConfig()->ScreenHeight;
-	//SwapChainDesc.BufferDesc.RefreshRate.Numerator = FEngineRenderConfig::GetRenderConfig()->RefreshRate;
-	//SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-	//SwapChainDesc.BufferCount = FEngineRenderConfig::GetRenderConfig()->SwapChainCount;//交换链缓冲区数量
-	//SwapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER::DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;//交换链扫描线顺序
-	//SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;//交换链缓冲区使用方式
-	//SwapChainDesc.OutputWindow = MainWindowsHandle;//交换链关联的窗口
-	//SwapChainDesc.Windowed = TRUE;//是否窗口化
-	////多重采样设置
-	//SwapChainDesc.SampleDesc.Count = b4XMSAAEnabled? 4:1;//交换链采样数量
-	//SwapChainDesc.SampleDesc.Quality = b4XMSAAEnabled ? M4XNumQualityLevels-1 : 0;//交换链采样质量
-	//SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD;//交换链交换效果
-	//SwapChainDesc.Flags = 0;//交换链标志
-	//SwapChainDesc.BufferDesc.Format = BufferFormat;//格式纹理
-
-	DXGI_SWAP_CHAIN_DESC sd = {};
-	sd.BufferCount = 2;
-	sd.BufferDesc.Width = 1280;
-	sd.BufferDesc.Height = 720;
-	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	sd.BufferDesc.RefreshRate.Numerator = 60;
-	sd.BufferDesc.RefreshRate.Denominator = 1;
-	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sd.OutputWindow = MainWindowsHandle;
-	sd.SampleDesc.Count = 1;
-	sd.SampleDesc.Quality = 0;
-	sd.Windowed = TRUE;
-	sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD; // 旧版兼容模式
-	sd.Flags = 0;
+	DXGI_SWAP_CHAIN_DESC SwapChainDesc = {};
+	SwapChainDesc.BufferDesc.Width = FEngineRenderConfig::GetRenderConfig()->ScreenWidth;//交换链缓冲区宽度
+	SwapChainDesc.BufferDesc.Height = FEngineRenderConfig::GetRenderConfig()->ScreenHeight;
+	SwapChainDesc.BufferDesc.RefreshRate.Numerator = FEngineRenderConfig::GetRenderConfig()->RefreshRate;
+	SwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+	SwapChainDesc.BufferCount = FEngineRenderConfig::GetRenderConfig()->SwapChainCount;//交换链缓冲区数量
+	SwapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER::DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;//交换链扫描线顺序
+	SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;//交换链缓冲区使用方式
+	SwapChainDesc.OutputWindow = MainWindowsHandle;//交换链关联的窗口
+	SwapChainDesc.Windowed = TRUE;//是否窗口化
+	//多重采样设置
+	SwapChainDesc.SampleDesc.Count = b4XMSAAEnabled? 4:1;//交换链采样数量
+	SwapChainDesc.SampleDesc.Quality = b4XMSAAEnabled ? M4XNumQualityLevels-1 : 0;//交换链采样质量
+	SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD;//交换链交换效果
+	SwapChainDesc.Flags = 0;//交换链标志
+	SwapChainDesc.BufferDesc.Format = BufferFormat;//格式纹理
 	
-	HRESULT hr = DXGIFactory->CreateSwapChain(
+	ANALYSIS_HRESULT(DXGIFactory->CreateSwapChain(
 		CommandQueue.Get(),//交换链关联的命令队列
-		&sd,
+		&SwapChainDesc,
 		&SwapChain
-	);
-
-	if(hr==DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
-	{
-		HRESULT DeviceRemovedReason = D3DDevice->GetDeviceRemovedReason();
-		wchar_t ErrorMessage[256];
-		swprintf_s(ErrorMessage, L"Device removed or reset! Reason: 0x%X", DeviceRemovedReason);
-		OutputDebugStringW(ErrorMessage);
-	}	
-
-	//ANALYSIS_HRESULT(DXGIFactory->CreateSwapChain(
-	//	CommandQueue.Get(),//交换链关联的命令队列
-	//	&SwapChainDesc,
-	//	&SwapChain
-	//));
+	));
 
 	//资源描述符
 	//RTV
@@ -339,7 +316,7 @@ bool FWindowsEngine::InitDirect3D()
 	//DSV
 	D3D12_DESCRIPTOR_HEAP_DESC DSVDescriptorHeapDesc = {};
 	DSVDescriptorHeapDesc.NumDescriptors = 1;//描述符数量
-	DSVDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;//渲染目标视图描述符堆
+	DSVDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;//渲染目标视图描述符堆
 	DSVDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;//描述符堆标志
 	DSVDescriptorHeapDesc.NodeMask = 0;//默认单个gpu线程
 	ANALYSIS_HRESULT(D3DDevice->CreateDescriptorHeap(
